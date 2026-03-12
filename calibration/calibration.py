@@ -21,12 +21,14 @@ objpoints = []
 imgpoints = [] 
 
 # Load the video you recorded
-video_path = 'chessboard.mp4'
+video_path = 'calibration/chessboard.mp4'
 cap = cv2.VideoCapture(video_path)
 
 print("Starting corner detection... Press 'q' to stop early.")
 
 frame_count = 0
+image_size = None
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret: break
@@ -36,6 +38,8 @@ while cap.isOpened():
     if frame_count % 5 != 0: continue
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    if image_size is None:
+        image_size = gray.shape[::-1]
 
     # Find the chessboard corners
     ret, corners = cv2.findChessboardCorners(gray, CHESSBOARD_SIZE, None)
@@ -57,9 +61,13 @@ while cap.isOpened():
 cap.release()
 cv2.destroyAllWindows()
 
+if not objpoints or image_size is None:
+    print("Error: No chessboard corners were found. Check your video.")
+    exit(1)
+
 # --- CALIBRATION ---
 print("Computing calibration... this may take a moment.")
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_size, None, None)
 
 print("\n--- RESULTS ---")
 print("Retval (Error):", ret)
